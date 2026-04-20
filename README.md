@@ -39,17 +39,39 @@ A sales dashboard created on Super Store dataset available on kaggle.
       - Dicounting too randomly
       - Discounting on products that already sell well
       - Discounting on low demanded products without impact
+- 
+- Calculated some more KPI's like top 10 customers, regular customers, revenue of each order, monthly sales with 3 and 6 month moving average, YOY Growth, and seasonality
+- And plot some graphs Profit vs Discount, Profit vs Weighted Discount and Profit vs Sales
 
 ## To Do
 - Can find Just to confirm
   - Correlation by product category
   - Correlation by region
   - Correlation by customer segment
-- can plot scatter plot for ( sale vs profit, or discount vs profit )
-- Because overall correlation can hide patterns.
-- Find the loss making products (can be done year wise)
-- Find Year-Over-Year growth
-- Find Time Series
-  - A time series is data collected and recorded over time in sequence.
-  - means data points are arranged by date, month, quarter, or year. How things change over time.
-  - ex: sales over months
+- Find the top loss making products year wise
+- Start visualizing the insights I found.
+ 
+## Revision things
+- df.resample()
+  - `mont_sales = df.resample('ME', on='Order Date')[['Sales','Profit','Discount']].sum()`
+  -  It works similarly to a groupby operation but is specialized for datetime-like indices. 
+  -  This method is a powerful tool used for frequency conversion and resampling of time-series data.
+  -  Resampling generally falls into two categories:
+    1. **Downsampling:** Reducing the data frequency (e.g., converting daily data into weekly totals). This requires an aggregation function like .sum() or .mean().
+    2. **Upsampling:** Increasing the data frequency (e.g., converting monthly data into daily data). This often creates missing values, requiring imputation methods like .ffill() (forward fill) or .interpolate().
+  - Parameter:
+    1. rule: A frequency string that defines the target interval (e.g., 'D' for Day, 'ME' for Month End, 'W' for Week).
+    2. on: Optional column name to use for resampling if the datetime is not in the index.
+    3. label:  Defines which side of the interval is "closed" and which label to use for the resulting bins.
+
+- I use a **Weighted average discount** instead of an average discount because
+    - Average discount treats all orders equal, irrespective of sales
+    - But weighted average discount calculates the average, depending on the order sales, i.e. gives more value to larger sales value.
+    </br>Formula: ` weighted_discount = sum(discount * sales) / sum(sales) `
+
+- df.rolling()
+  - The rolling() method in pandas is used to perform rolling window calculations.
+  - It creates a window of a specified size that slides over your data, allowing you to apply **statistical functions** (like mean, sum, standard deviation or even custom function through apply()) to that subset of data at each step.
+  - ` monthly_sales['Sales_MA_6'] = monthly_sales['Sales'].rolling(window=6).mean() `
+  - It left NaN for starting ending windows where window size is less than the required window.
+  - To avoid NaN I use `.fillna(0)`
