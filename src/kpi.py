@@ -43,7 +43,7 @@ def get_kpis(df):
     best_sales.index=["Name","Sales","Profit"]
 
     yearly_sales=df.groupby('Order Year')[['Sales', 'Profit']].sum().reset_index()
-    yearly_sales.set_index('Order Year', inplace=True)
+    # yearly_sales.set_index('Order Year', inplace=True)
 
     monthly_sales=df.resample('ME', on='Order Date').apply(
     lambda x:pd.Series({
@@ -72,8 +72,10 @@ def get_kpis(df):
     repeat_cust= df['Customer ID'].value_counts()
     repeat_cust=repeat_cust[repeat_cust>1].count()
 
+    total_customers=df['Customer ID'].nunique()
     top_customers = df.groupby('Customer ID')['Sales'].sum().sort_values(ascending=False).head(10)
-    top_products = df.groupby('Product Name')['Sales'].sum().nlargest(10)
+    top_products = df.groupby('Product Name')['Profit'].sum().nlargest(10)
+    top_loss_products = df.groupby('Product Name')['Profit'].sum().nsmallest(10).rename({'Profit':'Loss'})
 
     # Revenue per order (can be removed if not needed)
     orders = df.groupby('Order ID')[['Sales','Profit']].sum()
@@ -89,6 +91,10 @@ def get_kpis(df):
         },
         "Total Profit":{
             "value": total_profit,
+            "type": "Numeric"
+        },
+        "Total Customers":{
+            "value": total_customers,
             "type": "Numeric"
         },
         "Total Unique Orders":{
@@ -145,6 +151,10 @@ def get_kpis(df):
         },
         "Top Products":{
             "value": top_products,
+            "type": "Series"
+        },
+        "Top Loss Products":{
+            "value": top_loss_products,
             "type": "Series"
         },
         "Loss Products":{
