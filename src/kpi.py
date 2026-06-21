@@ -73,7 +73,32 @@ def get_kpis(df):
     repeat_cust=repeat_cust[repeat_cust>1].count()
 
     total_customers=df['Customer ID'].nunique()
-    top_customers = df.groupby('Customer ID')['Sales'].sum().sort_values(ascending=False).head(10)
+    
+    # Calculate Customer Metrics and Segmentations
+    customer_df = df.groupby('Customer Name').agg(
+        Segment=('Segment', 'first'),
+        Sales=('Sales', 'sum'),
+        Profit=('Profit', 'sum'),
+        Orders=('Order ID', 'nunique')
+    ).reset_index()
+
+    q25 = customer_df['Profit'].quantile(0.25)
+    q75 = customer_df['Profit'].quantile(0.75)
+
+    def get_value_segment(profit):
+        if profit >= q75:
+            return 'High Value'
+        elif profit >= q25:
+            return 'Mid Value'
+        else:
+            return 'Low Value'
+
+    customer_df['Value Segment'] = customer_df['Profit'].apply(get_value_segment)
+    customer_df = customer_df.sort_values(by='Profit', ascending=False).reset_index(drop=True)
+    
+    top_10_customers = customer_df.head(10).copy()
+    top_10_customers.insert(0, 'Rank', range(1, 11))
+
     top_products = df.groupby('Product Name')['Profit'].sum().nlargest(10)
     top_loss_products = df.groupby('Product Name')['Profit'].sum().nsmallest(10).rename({'Profit':'Loss'})
 
@@ -145,10 +170,6 @@ def get_kpis(df):
             "value": repeat_cust,
             "type": "Numeric"
         },
-        "Top Customers":{
-            "value": top_customers,
-            "type": "Series"
-        },
         "Top Products":{
             "value": top_products,
             "type": "Series"
@@ -168,6 +189,14 @@ def get_kpis(df):
         "Seasonality":{
             "value": seasonality,
             "type": "Series"
+        },
+        "Customer Data":{
+            "value": customer_df,
+            "type": "DataFrame"
+        },
+        "Top 10 Customers":{
+            "value": top_10_customers,
+            "type": "DataFrame"
         }
     }
     return kpis

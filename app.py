@@ -139,7 +139,7 @@ fig.update_traces(
     textinfo="label+value",
 )
 
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 st.divider()
 st.subheader('Product Performance Analysis')
@@ -178,7 +178,7 @@ with col1:
     # fig_top.update_traces(
     #     marker=dict(pattern_fillmode="overlay")
     # )
-    st.plotly_chart(fig_top, use_container_width=True)
+    st.plotly_chart(fig_top, width="stretch")
 
 with col2:
     st.write("#### Top 10 Loss-Making Products")
@@ -210,4 +210,58 @@ with col2:
         height=400,
         hovermode="y unified"
     )
-    st.plotly_chart(fig_loss, use_container_width=True)
+    st.plotly_chart(fig_loss, width="stretch")
+
+st.divider()
+st.subheader('Customer Analysis')
+
+col_cust1, col_cust2 = st.columns(2)
+
+with col_cust1:
+    st.write("#### Top 10 Customers by Profit")
+    top_10_cust = kpis['Top 10 Customers']['value']
+    st.dataframe(
+        top_10_cust,
+        column_config={
+            "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+            "Customer Name": st.column_config.TextColumn("Customer Name"),
+            "Segment": st.column_config.TextColumn("Segment"),
+            "Sales": st.column_config.NumberColumn("Total Sales", format="$%,.2f"),
+            "Profit": st.column_config.NumberColumn("Total Profit", format="$%,.2f"),
+            "Orders": st.column_config.NumberColumn("Orders Count", format="%d")
+        },
+        hide_index=True,
+        width="stretch"
+    )
+
+with col_cust2:
+    st.write("#### Customer Segmentation by Value")
+    
+    value_segment_option = st.selectbox(
+        "Select Customer Value Segment:",
+        options=["High Value", "Mid Value", "Low Value"],
+        index=0,
+        help="Filter customers by their sales value segments (determined by quantiles)."
+    )
+    
+    customer_data = kpis['Customer Data']['value']
+    filtered_cust = customer_data[customer_data['Value Segment'] == value_segment_option].copy()
+    filtered_cust.insert(0, 'Rank', range(1, len(filtered_cust) + 1))
+    
+    st.dataframe(
+        filtered_cust,
+        column_config={
+            "Rank": st.column_config.NumberColumn("Rank", format="%d"),
+            "Customer Name": st.column_config.TextColumn("Customer Name"),
+            "Segment": st.column_config.TextColumn("Segment"),
+            "Sales": st.column_config.NumberColumn("Total Sales", format="$%,.2f"),
+            "Profit": st.column_config.NumberColumn("Total Profit", format="$%,.2f"),
+            "Orders": st.column_config.NumberColumn("Orders Count", format="%d"),
+            "Value Segment": None
+        },
+        hide_index=True,
+        width="stretch",
+        height=300
+    )
+
+    
