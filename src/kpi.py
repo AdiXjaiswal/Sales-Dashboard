@@ -21,6 +21,29 @@ def get_kpis(df):
     seg_sales=df.groupby("Segment")[["Sales","Profit"]].sum().reset_index()
 
     city_sales = df.groupby('City')[['Sales', 'Profit']].sum().sort_values(by='Profit', ascending=False)
+
+    # State Sales for Choropleth Map mapping
+    us_state_to_abbrev = {
+        "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA",
+        "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE", "Florida": "FL", "Georgia": "GA",
+        "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA",
+        "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
+        "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS",
+        "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH",
+        "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY", "North Carolina": "NC",
+        "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA",
+        "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN",
+        "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+        "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY", "District of Columbia": "DC"
+    }
+    state_sales = df.groupby("State")[["Sales", "Profit"]].sum().reset_index()
+    state_sales["State_Code"] = state_sales["State"].map(us_state_to_abbrev)
+
+    # Correlation Matrix & Scatter Data Calculations
+    corr_cols = ["Sales", "Profit", "Discount", "Quantity", "Shipping Days"]
+    correlation_matrix = df[corr_cols].corr()
+    scatter_df = df[["Profit", "Discount", "Sales", "Category", "Sub-Category"]].copy()
+
     cat_sales['Profit_Margin']=(cat_sales['Profit'] / cat_sales['Sales']) * 100
     sub_cat_sales['Profit_Margin']=(sub_cat_sales['Profit'] / sub_cat_sales['Sales']) * 100
     sub_cat_sales.sort_values(['Category','Profit_Margin'], ascending=[True,False], inplace=True)
@@ -196,6 +219,18 @@ def get_kpis(df):
         },
         "Top 10 Customers":{
             "value": top_10_customers,
+            "type": "DataFrame"
+        },
+        "State Sales":{
+            "value": state_sales,
+            "type": "DataFrame"
+        },
+        "Correlation Matrix":{
+            "value": correlation_matrix,
+            "type": "DataFrame"
+        },
+        "Scatter Data":{
+            "value": scatter_df,
             "type": "DataFrame"
         }
     }

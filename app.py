@@ -264,4 +264,118 @@ with col_cust2:
         height=300
     )
 
+st.divider()
+st.subheader('Regional & State Analysis')
+
+col_reg1, col_reg2 = st.columns(2)
+
+with col_reg1:
+    st.write("#### Sales & Profit by Region")
+    region_sales_df = kpis['Region Sales']['value'].copy()
+    region_melted = region_sales_df.melt(
+        id_vars='Region', 
+        value_vars=['Sales', 'Profit'], 
+        var_name='Metric', 
+        value_name='Amount'
+    )
     
+    fig_region = px.bar(
+        region_melted,
+        x='Region',
+        y='Amount',
+        color='Metric',
+        barmode='stack',
+        category_orders={
+            'Metric': ['Profit', 'Sales']  # Bottom -> Top
+        },
+        color_discrete_map={
+            'Sales': '#3b82f6',   # Premium Royal Blue
+            'Profit': '#10b981'   # Premium Emerald Green
+        },
+        hover_data={'Region': True, 'Metric': True, 'Amount': ':$,.2f'}
+    )
+    
+    fig_region.update_layout(
+        xaxis_title="Region",
+        yaxis_title="Amount ($)",
+        margin=dict(t=20, l=10, r=10, b=10),
+        font=dict(family="Outfit, Inter, sans-serif", size=12),
+        height=400
+    )
+    st.plotly_chart(fig_region, width="stretch")
+
+with col_reg2:
+    st.write("#### Sales Map by US State")
+    state_sales_df = kpis['State Sales']['value'].copy()
+    
+    fig_map = px.choropleth(
+        state_sales_df,
+        locations='State_Code',
+        locationmode="USA-states",
+        color='Sales',
+        scope="usa",
+        color_continuous_scale="Oranges",#Peach
+        hover_data={'State': True, 'Sales': ':$,.2f', 'Profit': ':$,.2f', 'State_Code': False}
+    )
+    
+    fig_map.update_layout(
+        margin=dict(t=10, l=10, r=10, b=10),
+        font=dict(family="Outfit, Inter, sans-serif", size=12),
+        height=400,
+        geo=dict(
+            bgcolor='rgba(0,0,0,0)',
+            lakecolor='rgba(0,0,0,0)'
+        )
+    )
+    st.plotly_chart(fig_map, width="stretch")
+
+st.divider()
+st.subheader('Correlation & Scatter Analysis')
+
+col_corr1, col_corr2 = st.columns(2)
+
+with col_corr1:
+    st.write("#### Correlation Matrix")
+    corr_df = kpis['Correlation Matrix']['value']
+    
+    fig_corr = px.imshow(
+        corr_df,
+        text_auto=".2f",
+        color_continuous_scale="RdBu",
+        color_continuous_midpoint=0,
+        aspect="auto",
+        labels=dict(color="Correlation")
+    )
+    
+    fig_corr.update_layout(
+        margin=dict(t=20, l=10, r=10, b=10),
+        font=dict(family="Outfit, Inter, sans-serif", size=12),
+        height=400
+    )
+    st.plotly_chart(fig_corr, width="stretch")
+
+with col_corr2:
+    st.write("#### Relationship between Profit & Discount")
+    scatter_df = kpis['Scatter Data']['value']
+    
+    fig_scatter = px.scatter(
+        scatter_df,
+        x='Discount',
+        y='Profit',
+        color='Category',
+        size='Sales',
+        hover_data={'Category': True, 'Sub-Category': True, 'Discount': ':.0%', 'Profit': ':$,.2f', 'Sales': ':$,.2f'},
+        color_discrete_sequence=px.colors.qualitative.Pastel,
+        opacity=0.9
+    )
+    
+    fig_scatter.update_layout(
+        xaxis=dict(tickformat=".0%"),
+        xaxis_title="Discount",
+        yaxis_title="Profit ($)",
+        margin=dict(t=20, l=10, r=10, b=10),
+        font=dict(family="Outfit, Inter, sans-serif", size=12),
+        height=400
+    )
+    st.plotly_chart(fig_scatter, width="stretch")
+
