@@ -1,18 +1,51 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import altair as alt
-from src import data_pipeline
+from src import data_pipeline, model_pipeline
 
-kpis = data_pipeline()
+@st.cache_data
+def cached_data_pipeline():
+    return data_pipeline()
+
+@st.cache_data
+def cached_model_pipeline(future_period):
+    return model_pipeline(future_period)
+
+kpis = cached_data_pipeline()
 
 st.set_page_config(layout='wide')
 st.title('Sales Dashboard')
 st.text('Welcome to the Sales Dashboard! Here we analyse the data from the Superstore dataset.')
 
+st.markdown("""
+<style>
+section[data-testid="stSidebar"] a {
+    color: black !important;
+    # font-weight: 700 !important;
+    # font-size: 18px !important;
+    text-decoration: none !important;
+}
 
-nav=st.sidebar.title('Navigation')
-st.subheader("KPI's")
+section[data-testid="stSidebar"] a:hover {
+    color: #3b82f6 !important;
+    text-decoration: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.sidebar.title('Navigation')
+st.sidebar.markdown("""
+- [KPIs Overview](#kpis-overview)
+- [Sales Performance](#sales-performance)
+- [Category & Sub-Category](#category-distribution)
+- [Product Performance](#product-performance)
+- [Customer Analysis](#customer-analysis)
+- [Regional & State Analysis](#regional-analysis)
+- [Feature Analysis](#feature-analysis)
+- [Sales Forecasting](#sales-forecasting)
+""")
+
+st.subheader("KPI's", anchor="kpis-overview")
 con1=st.container(width=1200, height=220, vertical_alignment="center")
 
 c1, c2, c3, c4 = con1.columns(4, vertical_alignment="center")
@@ -28,50 +61,82 @@ c7=c7.metric(label='# of Sub-Categories', value=kpis['Sub-Category Sales']['valu
 c8=c8.metric(label='# of Orders', value=kpis['Total Unique Orders']['value'])
 
 st.divider()
-st.subheader('Sales Performance')
+st.subheader('Sales Performance', anchor="sales-performance")
 
 source = kpis['Yearly Sales']['value']
-# Selection that follows the mouse
-nearest = alt.selection_point(
-    nearest=True,
-    on='pointerover',
-    fields=['Order Year'],
-    empty=False
-)
 
-# Base line
-line = alt.Chart(source).mark_line().encode(
-    x=alt.X('Order Year:O', title='Year'),
-    y=alt.Y('Sales:Q', title='Sales')
-)
+col_perf1, col_perf2 = st.columns(2)
 
-# Highlighted point
-points = line.mark_point().encode(
-    opacity=alt.condition(nearest, alt.value(1), alt.value(0))
-)
+with col_perf1:
+    st.write("#### Yearly Sales Growth")
+    latest_sales = source.loc[source['Order Year'] == 2017, 'Sales'].values[0]
+    prev_sales = source.loc[source['Order Year'] == 2016, 'Sales'].values[0]
+    sales_growth = ((latest_sales - prev_sales) / prev_sales) * 100
+    st.metric(
+        label="Sales (2017)", 
+        value=f"${latest_sales:,.2f}", 
+        delta=f"{sales_growth:+.2f}% YoY Growth"
+    )
+    
+    fig_sales = px.line(
+        source,
+        x='Order Year',
+        y='Sales',
+        markers=True,
+        color_discrete_sequence=['#3b82f6'] # Premium Royal Blue
+    )
+    fig_sales.update_layout(
+        xaxis_title="Year",
+        yaxis_title="Total Sales ($)",
+        xaxis=dict(type='category'),
+        margin=dict(t=20, l=10, r=10, b=10),
+        font=dict(family="Outfit, Inter, sans-serif", size=12),
+        height=350,
+        hovermode="x unified"
+    )
+    fig_sales.update_traces(
+        line=dict(width=3),
+        marker=dict(size=8),
+        hovertemplate="<b>Year: %{x}</b><br>Sales: %{y:$,.2f}<extra></extra>"
+    )
+    st.plotly_chart(fig_sales, width="stretch")
 
-# Vertical line following mouse
-rules = alt.Chart(source).mark_rule(color='gray').encode(x='Order Year:O').transform_filter(nearest)
-
-# Tooltip
-tooltips = alt.Chart(source).mark_rule(opacity=0).encode(
-    x='Order Year:O',
-    tooltip=[
-        alt.Tooltip('Order Year:O', title='Year'),
-        alt.Tooltip('Sales:Q', title='Sales', format='$,.2f')
-    ]
-).add_params(nearest)
-
-chart = alt.layer(
-    line,
-    points,
-    rules,
-    tooltips
-)
-st.altair_chart(chart)
+with col_perf2:
+    st.write("#### Yearly Profit Growth")
+    latest_profit = source.loc[source['Order Year'] == 2017, 'Profit'].values[0]
+    prev_profit = source.loc[source['Order Year'] == 2016, 'Profit'].values[0]
+    profit_growth = ((latest_profit - prev_profit) / prev_profit) * 100
+    st.metric(
+        label="Profit (2017)", 
+        value=f"${latest_profit:,.2f}", 
+        delta=f"{profit_growth:+.2f}% YoY Growth"
+    )
+    
+    fig_profit = px.line(
+        source,
+        x='Order Year',
+        y='Profit',
+        markers=True,
+        color_discrete_sequence=['#10b981'] # Premium Emerald Green
+    )
+    fig_profit.update_layout(
+        xaxis_title="Year",
+        yaxis_title="Total Profit ($)",
+        xaxis=dict(type='category'),
+        margin=dict(t=20, l=10, r=10, b=10),
+        font=dict(family="Outfit, Inter, sans-serif", size=12),
+        height=350,
+        hovermode="x unified"
+    )
+    fig_profit.update_traces(
+        line=dict(width=3),
+        marker=dict(size=8),
+        hovertemplate="<b>Year: %{x}</b><br>Profit: %{y:$,.2f}<extra></extra>"
+    )
+    st.plotly_chart(fig_profit, width="stretch")
 
 st.divider()
-st.subheader('Distribution of Category & Sub-Category')
+st.subheader('Distribution of Category & Sub-Category', anchor="category-distribution")
 
 # Interactivity control: allow user to select coloring metric
 color_option = st.selectbox(
@@ -142,7 +207,7 @@ fig.update_traces(
 st.plotly_chart(fig, width="stretch")
 
 st.divider()
-st.subheader('Product Performance Analysis')
+st.subheader('Product Performance Analysis', anchor="product-performance")
 
 col1, col2 = st.columns(2)
 
@@ -213,7 +278,7 @@ with col2:
     st.plotly_chart(fig_loss, width="stretch")
 
 st.divider()
-st.subheader('Customer Analysis')
+st.subheader('Customer Analysis', anchor="customer-analysis")
 
 col_cust1, col_cust2 = st.columns(2)
 
@@ -265,7 +330,7 @@ with col_cust2:
     )
 
 st.divider()
-st.subheader('Regional & State Analysis')
+st.subheader('Regional & State Analysis', anchor="regional-analysis")
 
 col_reg1, col_reg2 = st.columns(2)
 
@@ -330,7 +395,7 @@ with col_reg2:
     st.plotly_chart(fig_map, width="stretch")
 
 st.divider()
-st.subheader('Correlation & Scatter Analysis')
+st.subheader('Feature Analysis', anchor="feature-analysis")
 
 col_corr1, col_corr2 = st.columns(2)
 
@@ -378,4 +443,95 @@ with col_corr2:
         height=400
     )
     st.plotly_chart(fig_scatter, width="stretch")
+
+st.divider()
+st.subheader('Sales Forecasting', anchor="sales-forecasting")
+st.write("Predict future sales using our trained XGBoost recursive forecasting model.")
+
+# Sidebar or inline slider for forecast period
+forecast_period = st.slider(
+    "Select Forecast Period (Months):",
+    min_value=3,
+    max_value=24,
+    value=12,
+    step=1,
+    help="Select the number of future months to forecast sales for."
+)
+
+with st.spinner("Generating future sales forecast..."):
+    future_sales = cached_model_pipeline(future_period=forecast_period)
+
+# Access historical monthly sales from loaded KPIs
+historical_sales = kpis['Monthly Sales']['value'].copy()
+
+# Prepare dataframes for line chart
+df_hist = historical_sales[['Order Date', 'Sales']].rename(columns={'Order Date': 'Date'})
+df_hist['Date'] = pd.to_datetime(df_hist['Date'])
+df_hist['Type'] = 'Historical'
+
+df_fore = future_sales.rename(columns={'Forecast_Sales': 'Sales'})
+df_fore['Date'] = pd.to_datetime(df_fore['Date'])
+df_fore['Type'] = 'Forecast'
+
+# Connect the lines smoothly by duplicating the last historical point into the forecast line
+last_hist_point = df_hist.tail(1).copy()
+last_hist_point['Type'] = 'Forecast'
+
+combined_df = pd.concat([df_hist, last_hist_point, df_fore], ignore_index=True)
+combined_df.sort_values(by='Date', inplace=True)
+
+# Build a premium Plotly line chart
+fig_forecast = px.line(
+    combined_df,
+    x='Date',
+    y='Sales',
+    color='Type',
+    color_discrete_map={
+        'Historical': '#3b82f6',  # Royal Blue
+        'Forecast': '#ef4444'     # Premium Red
+    },
+    labels={'Sales': 'Sales ($)', 'Date': 'Date', 'Type': 'Data Type'}
+)
+
+fig_forecast.update_layout(
+    xaxis_title="Date",
+    yaxis_title="Total Sales ($)",
+    margin=dict(t=20, l=10, r=10, b=10),
+    font=dict(family="Outfit, Inter, sans-serif", size=12),
+    height=450,
+    hovermode="x unified",
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    )
+)
+
+fig_forecast.update_traces(
+    line=dict(width=3),
+    hovertemplate="<b>%{y:$,.2f}</b><extra></extra>"
+)
+
+# Display metrics
+col_f1, col_f2, col_f3 = st.columns(3)
+col_f1.metric(
+    label="Total Forecasted Sales", 
+    value=f"${future_sales['Forecast_Sales'].sum():,.2f}"
+)
+col_f2.metric(
+    label="Average Monthly Forecasted Sales", 
+    value=f"${future_sales['Forecast_Sales'].mean():,.2f}"
+)
+peak_row = future_sales.loc[future_sales['Forecast_Sales'].idxmax()]
+col_f3.metric(
+    label="Peak Forecasted Month", 
+    value=peak_row['Date'].strftime('%b %Y'),
+    delta=f"${peak_row['Forecast_Sales']:,.2f}"
+)
+
+# Render the plot
+st.plotly_chart(fig_forecast,width='stretch')
+
 
