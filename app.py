@@ -3,6 +3,9 @@ import pandas as pd
 import plotly.express as px
 from src import data_pipeline, model_pipeline
 
+st.set_page_config(layout='wide')
+st.title('Sales Dashboard')
+
 @st.cache_data
 def cached_data_pipeline():
     return data_pipeline()
@@ -13,8 +16,6 @@ def cached_model_pipeline(future_period):
 
 kpis = cached_data_pipeline()
 
-st.set_page_config(layout='wide')
-st.title('Sales Dashboard')
 st.text('Welcome to the Sales Dashboard! Here we analyse the data from the Superstore dataset.')
 
 st.markdown("""
